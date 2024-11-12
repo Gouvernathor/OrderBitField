@@ -100,16 +100,13 @@ class OrderBitField(bytes):
         return cls(other[:] + _BYTES_MAGIC_MIDDLE)
 
     @classmethod
-    def n_between(cls, n: int, start: "OrderBitField", end: "OrderBitField|None") -> Iterable[Self]:
+    def n_between(cls, n: int, start: "OrderBitField", end: "OrderBitField") -> Iterable[Self]:
         """
         Constructor, yields OrderBitFields that are between the two given OrderBitFields.
         Returns the shortest values possible,
         and then as evenly spaced between the two boundaries as possible.
         """
-        # TODO should implement the full algorithm,
-        # start should be exceptionnaly emptyable but not nullable
-        # end should be nullable but not emptyable
-        raise NotImplementedError
+        return map(cls, cls._n_between(n, start, end))
 
     @classmethod
     def n_initial(cls, n: int = 1) -> Iterable[Self]:
@@ -118,9 +115,14 @@ class OrderBitField(bytes):
         Returns the shortest values possible,
         and then as evenly spaced as possible.
         """
-        with warnings.catch_warnings(action="ignore", category=ZeroOrderBitFieldWarning):
-            start = cls(_BYTES_ZERO)
-        return cls.n_between(n, start, None)
+        return map(cls, cls._n_between(n, _BYTES_ZERO, None))
+
+    @staticmethod
+    def _n_between(n: int, start: bytes, end: bytes|None) -> Iterable[bytes]:
+        # TODO should implement the full algorithm,
+        # start should be exceptionnaly emptyable but not nullable
+        # end should be nullable but not emptyable
+        raise NotImplementedError
 
     # TODO test this for internal failures
     __add__ = __radd__ = lambda self, other: NotImplemented
