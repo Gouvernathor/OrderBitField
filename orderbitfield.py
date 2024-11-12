@@ -4,8 +4,9 @@ from typing import ClassVar, Self
 import warnings
 
 
-_MAX_BYTE = 127  # maximum value of a byte
-_MAGIC_MIDDLE = _MAX_BYTE // 2
+_TOP_VALUE = 256
+_MAX_BYTE = _TOP_VALUE - 1
+_MAGIC_MIDDLE = _TOP_VALUE // 2
 _BYTES_MAGIC_MIDDLE = bytes((_MAGIC_MIDDLE,))
 _BYTES_ZERO = bytes((0,))
 
@@ -111,7 +112,7 @@ class OrderBitField(bytes):
         raise NotImplementedError
 
     @classmethod
-    def n_initial(cls, n: int = 1) -> "Iterable[Self]":
+    def n_initial(cls, n: int = 1) -> Iterable[Self]:
         """
         Constructor, yields OrderBitFields.
         Returns the shortest values possible,
