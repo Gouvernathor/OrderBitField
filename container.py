@@ -1,50 +1,51 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Collection, Hashable, Iterator, Reversible
+from collections.abc import Callable, Collection, Iterator, Reversible
+from typing import override
 
 from orderbitfield import OrderBitField
 
 
-class ReorderableContainer[V](Collection[V], Reversible[V], ABC):
+class ReorderableContainer[T](Collection[T], Reversible[T], ABC):
     __slots__ = ()
 
     @abstractmethod
-    def move_next_to(self, next_to: V, *elements: V, after=True) -> None:
+    def put_between(self, start: T, end: T, *elements: T) -> None:
         """
-        Move the element next to the next_to element.
-        """
-
-    @abstractmethod
-    def add_next_to(self, next_to: V, *elements: V, after=True) -> None:
-        """
-        Add the element next to the next_to element.
+        Put the elements between the start and end elements.
         """
 
     @abstractmethod
-    def add(self, *elements: V, last=True) -> None:
+    def put_to_end(self, *elements: T, last=True) -> None:
         """
-        Add the element at the end of the container.
+        Put the elements at one end of the container.
         """
 
     @abstractmethod
-    def popitem(self, *, last=True) -> V:
+    def put_next_to(self, next_to: T, *elements: T, after=True) -> None:
+        """
+        Put the elements next to the next_to element.
+        """
+
+    @abstractmethod
+    def recompute(self) -> None:
+        """
+        Recompute the order markers of the elements, without changing the ordering.
+        """
+
+    @abstractmethod
+    def popitem(self, *, last=True) -> T:
         """
         Remove and return the last element in the container.
         """
 
     @abstractmethod
-    def move_to_end(self, *elements: V, last=True) -> None:
-        """
-        Move the element to the end of the container.
-        """
-
-    @abstractmethod
-    def remove(self, *elements: V) -> None:
+    def remove(self, *elements: T) -> None:
         """
         Remove the elements from the container, raises if any is not present.
         """
 
     @abstractmethod
-    def discard(self, *elements: V) -> None:
+    def discard(self, *elements: T) -> None:
         """
         Remove the elements from the container if present.
         """
@@ -55,64 +56,43 @@ class ReorderableContainer[V](Collection[V], Reversible[V], ABC):
     # __len__
     # __reversed__
 
-class MappingBasedReorderableContainer[V](ReorderableContainer[V]):
+class MappingBasedReorderableContainer[T](ReorderableContainer[T]):
     """
     Only supports hashable elements with no duplicate.
     """
 
-    def __init__(self, *elements: V) -> None:
+    def __init__(self, *elements: T) -> None:
         self._store = dict(zip(elements, OrderBitField.initial(len(elements))))
 
+    @override
     def __contains__(self, x: object) -> bool:
         return x in self._store
 
-    def __iter__(self) -> Iterator[V]:
+    @override
+    def __iter__(self) -> Iterator[T]:
         return iter(sorted(self._store, key=self._store.__getitem__))
 
+    @override
     def __len__(self) -> int:
         return len(self._store)
 
-    def __reversed__(self) -> Iterator[V]:
+    @override
+    def __reversed__(self) -> Iterator[T]:
         return iter(sorted(self._store, key=self._store.__getitem__, reverse=True))
 
-    def move_next_to(self, next_to: V, *elements: V, after=True) -> None:
-        if next_to not in self._store:
-            raise KeyError(next_to)
-        if not elements:
-            return
-        # if not (self._store.keys() > set(elements)): # TODO: check
-        #     raise KeyError("Duplicate elements")
-
-        nto = self._store[next_to]
-        if after:
-            nxto = min(filter(lambda o: o > nto, self._store.values()), default=None)
-            newos = OrderBitField.n_between(len(elements), nto, nxto)
-        else:
-            nxto = max(filter(lambda o: o < nto, self._store.values()), default=None)
-            newos = OrderBitField.n_between(len(elements), nxto, nto)
-        for element, newo in zip(elements, newos):
-            self._store[element] = newo
-
-    def add_next_to(self, next_to: V, *elements: V, after=True) -> None:
-        if next_to not in self._store:
-            raise KeyError(next_to)
-        if not elements:
-            return
-        if self._store.keys() & set(elements):
-            raise KeyError("Duplicate elements")
-
-        nto = self._store[next_to]
-        if after:
-            start = nto
-            end = min(filter(lambda o: o > nto, self._store.values()), default=None)
-        else:
-            start = max(filter(lambda o: o < nto, self._store.values()), default=None)
-            end = nto
+    def _put_between_orderfields(self, elements: Collection[T], start: OrderBitField|None, end: OrderBitField|None):
         newos = OrderBitField.n_between(len(elements), start, end)
         for element, newo in zip(elements, newos):
             self._store[element] = newo
 
-    def add(self, *elements: V, last=True) -> None:
+    @override
+    def put_between(self, start: T, end: T, *elements: T) -> None:
+        if start == end:
+            raise ValueError("The start and end elements are the same")
+        self._put_between_orderfields(elements, self._store[start], self._store[end])
+
+    @override
+    def put_to_end(self, *elements: T, last=True) -> None:
         if last:
             start = max(self._store.values(), default=None)
             end = None
@@ -120,11 +100,26 @@ class MappingBasedReorderableContainer[V](ReorderableContainer[V]):
             start = None
             end = min(self._store.values(), default=None)
 
-        newos = OrderBitField.n_between(len(elements), start, end)
-        for element, newo in zip(elements, newos):
-            self._store[element] = newo
+        self._put_between_orderfields(elements, start, end)
 
-    def popitem(self, *, last=True) -> V:
+    @override
+    def put_next_to(self, next_to: T, *elements: T, after=True) -> None:
+        nto = self._store[next_to]
+        if after:
+            start = nto
+            end = min(filter(lambda o: o > nto, self._store.values()), default=None)
+        else:
+            start = max(filter(lambda o: o < nto, self._store.values()), default=None)
+            end = nto
+
+        self._put_between_orderfields(elements, start, end)
+
+    @override
+    def recompute(self) -> None:
+        self._store = dict(zip(self, OrderBitField.initial(len(self))))
+
+    @override
+    def popitem(self, *, last=True) -> T:
         if last:
             element = max(self._store, key=self._store.__getitem__)
         else:
@@ -132,14 +127,12 @@ class MappingBasedReorderableContainer[V](ReorderableContainer[V]):
         del self._store[element]
         return element
 
-    def move_to_end(self, *elements: V, last=True) -> None:
-        self.remove(*elements)
-        self.add(*elements, last=last)
-
-    def remove(self, *elements: V) -> None:
+    @override
+    def remove(self, *elements: T) -> None:
         for element in elements:
             del self._store[element]
 
-    def discard(self, *elements: V) -> None:
+    @override
+    def discard(self, *elements: T) -> None:
         for element in elements:
             self._store.pop(element, None)
