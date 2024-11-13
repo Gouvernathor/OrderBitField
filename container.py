@@ -1,9 +1,16 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Collection, Iterator, Reversible
-from typing import override
+from typing import Protocol, TypeVar, override
 
 from orderbitfield import OrderBitField
 
+
+class SelfComparable(Protocol):
+    """
+    Protocol for types that can be compared to themselves.
+    """
+    def __lt__(self: "CV", other: "CV", /) -> bool: ...
+CV = TypeVar("CV", bound=SelfComparable)
 
 class ReorderableContainer[T](Collection[T], Reversible[T], ABC):
     __slots__ = ()
@@ -48,6 +55,12 @@ class ReorderableContainer[T](Collection[T], Reversible[T], ABC):
     def discard(self, *elements: T) -> None:
         """
         Remove the elements from the container if present.
+        """
+
+    @abstractmethod
+    def sort_key(self) -> Callable[[T], SelfComparable]:
+        """
+        Extracts a key function, to be used i.e in the sorted or list.sort methods.
         """
 
     # abstract :
@@ -136,3 +149,7 @@ class MappingBasedReorderableContainer[T](ReorderableContainer[T]):
     def discard(self, *elements: T) -> None:
         for element in elements:
             self._store.pop(element, None)
+
+    @override
+    def sort_key(self) -> Callable[[T], SelfComparable]:
+        return self._store.__getitem__
