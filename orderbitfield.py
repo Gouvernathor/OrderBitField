@@ -49,7 +49,7 @@ class OrderBitField(bytes):
         return bytes(self)
 
     def __repr__(self):
-        return f"{type(self)}(({', '.join(map(str, self))}))"
+        return f"{self.__class__.__name__}(({', '.join(map(str, self))}))"
 
     @classmethod
     def between(cls, start: "OrderBitField", end: "OrderBitField") -> Self:

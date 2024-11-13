@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Collection, Iterable, Mapping
 import types
 
@@ -112,7 +112,7 @@ def _ponderated_distribute_indices(
     assert mx < _TOP_VALUE
 
     nchars = mx - mn + 1
-    attrib = {}
+    attrib = Counter()
     restant = ncodes
 
     if ncodes > nchars:
@@ -123,7 +123,7 @@ def _ponderated_distribute_indices(
             restant -= val
 
     for c in _simple_distribute_indices(restant, mn, mx):
-        attrib[c] += 1 # FIXME à mon avis ça plante, à remplacer par un Counter
+        attrib[c] += 1
 
     return attrib
 
@@ -138,6 +138,7 @@ def _simple_distribute_indices(ncodes: int, mn: int, mx: int) -> Iterable[int]:
     if ncodes == 2:
         yield mn + (nchars - 1)//3
         yield mn + (2*nchars - 1)//3
+        return
 
     # midpoint
     pivot = mn + nchars//2
