@@ -3,12 +3,15 @@ import math
 from typing import ClassVar, Self
 import warnings
 
+from deps import (
+    common_prefix as _common_prefix,
+    generate_codes_v3 as _generate_codes_v3,
+    MAX_BYTE as _MAX_BYTE,
+    MAGIC_MIDDLE as _MAGIC_MIDDLE,
+    BYTES_MAGIC_MIDDLE as _BYTES_MAGIC_MIDDLE,
+    BYTES_ZERO as _BYTES_ZERO,
+)
 
-_TOP_VALUE = 256
-_MAX_BYTE = _TOP_VALUE - 1
-_MAGIC_MIDDLE = _TOP_VALUE // 2
-_BYTES_MAGIC_MIDDLE = bytes((_MAGIC_MIDDLE,))
-_BYTES_ZERO = bytes((0,))
 
 class ZeroOrderBitFieldWarning(Warning):
     """
@@ -25,7 +28,7 @@ class OrderBitField(bytes):
       when you need to insert a value between two existing values.
     - `OrderBitField.before` and `OrderBitField.after`
       when you need to insert a value before or after an existing value.
-    - `OrderBitField.n_initial` (when implemented)
+    - `OrderBitField.initial` (when implemented)
       when you create the initial values of a sequence.
     Only class and static methods should be used to create instances of this class.
 
@@ -100,29 +103,29 @@ class OrderBitField(bytes):
         return cls(other[:] + _BYTES_MAGIC_MIDDLE)
 
     @classmethod
-    def n_between(cls, n: int, start: "OrderBitField", end: "OrderBitField") -> Iterable[Self]:
+    def n_between(cls, n: int, start: "OrderBitField|None", end: "OrderBitField|None") -> Iterable[Self]:
         """
         Constructor, yields OrderBitFields that are between the two given OrderBitFields.
         Returns the shortest values possible,
         and then as evenly spaced between the two boundaries as possible.
         """
-        return map(cls, cls._n_between(n, start, end))
+        if start and end:
+            prefixe = _common_prefix(start, end)
+            if prefixe:
+                start = start[len(prefixe):] # type: ignore
+                end = end[len(prefixe):] # type: ignore
+        else:
+            prefixe = b""
+        return map(cls, _generate_codes_v3(n, start or b"", end or None, prefixe))
 
     @classmethod
-    def n_initial(cls, n: int = 1) -> Iterable[Self]:
+    def initial(cls, n: int = 1) -> Iterable[Self]:
         """
         Constructor, yields OrderBitFields.
         Returns the shortest values possible,
         and then as evenly spaced as possible.
         """
-        return map(cls, cls._n_between(n, _BYTES_ZERO, None))
-
-    @staticmethod
-    def _n_between(n: int, start: bytes, end: bytes|None) -> Iterable[bytes]:
-        # TODO should implement the full algorithm,
-        # start should be exceptionnaly emptyable but not nullable
-        # end should be nullable but not emptyable
-        raise NotImplementedError
+        return map(cls, _generate_codes_v3(n, b"", None, b""))
 
     # TODO test this for internal failures
     __add__ = __radd__ = lambda self, other: NotImplemented
