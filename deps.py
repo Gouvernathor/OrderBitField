@@ -25,6 +25,9 @@ def generate_codes_v3(
         code_end: bytes|None,
         prefixe: bytes,
         ) -> Iterable[bytes]:
+    """
+    The codes are yielded in order.
+    """
     if not ncodes:
         return
 
@@ -103,6 +106,8 @@ def generate_codes_v3(
                 code_start[1:] if code_start and c == start_digit_1 else b"",
                 code_end[1:] if code_end and c == end_digit_1 else None,
                 pre)
+
+generate_codes = generate_codes_v3
 
 def _ponderated_distribute_indices(
         ncodes: int,

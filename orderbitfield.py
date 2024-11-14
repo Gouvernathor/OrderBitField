@@ -5,7 +5,7 @@ import warnings
 
 from deps import (
     common_prefix as _common_prefix,
-    generate_codes_v3 as _generate_codes_v3,
+    generate_codes as _generate_codes,
     MAX_BYTE as _MAX_BYTE,
     MAGIC_MIDDLE as _MAGIC_MIDDLE,
     BYTES_MAGIC_MIDDLE as _BYTES_MAGIC_MIDDLE,
@@ -130,7 +130,7 @@ class OrderBitField(bytes):
                 end = end[len(prefixe):] # type: ignore
         else:
             prefixe = b""
-        return map(cls, _generate_codes_v3(n, start or b"", end or None, prefixe))
+        return map(cls, _generate_codes(n, start or b"", end or None, prefixe))
 
     @classmethod
     def initial(cls, n: int = 1) -> Iterable[Self]:
@@ -139,7 +139,7 @@ class OrderBitField(bytes):
         Returns the shortest values possible,
         and then as evenly spaced as possible.
         """
-        return map(cls, _generate_codes_v3(n, b"", None, b""))
+        return map(cls, _generate_codes(n, b"", None, b""))
 
     def __add__(self, other) -> "OrderBitField":
         """
