@@ -45,7 +45,7 @@ class OrderBitField(bytes):
     """
     __slots__ = ()
 
-    max_size: int|None = None
+    max_size: ClassVar[int|None] = None
 
     def __new__(cls, val):
         val = bytes(val)
@@ -141,17 +141,22 @@ class OrderBitField(bytes):
         """
         return map(cls, _generate_codes_v3(n, b"", None, b""))
 
-    def __add__(self, other):
+    def __add__(self, other) -> "OrderBitField":
         """
         This only works when the left instance is bound.
-        The self instance is right-padded with 0 bytes.
-        If the other instance is bound, the new instance is bound to the sum of the sizes.
-        Otherwise, the new instance is not bound.
-        The return type is always the type of the left operand.
+        The left instance is right-padded with 0 bytes until that max size.
+        If the other instance is bound, the new instance is of an ad-hoc type,
+        bound to the sum of the sizes.
+        Otherwise, the new instance is not bound and is of type OrderBitField.
         """
         if (self.max_size is not None) and isinstance(other, OrderBitField):
-            rv = type(self)(bytes.__add__(self.ljust(self.max_size, _BYTES_ZERO), other))
+            b = bytes.__add__(self.ljust(self.max_size, _BYTES_ZERO), other)
             if other.max_size is not None:
-                rv.max_size = self.max_size + other.max_size
-            return rv
+                class BoundOrderBitField(OrderBitField):
+                    __slots__ = ()
+                    max_size = self.max_size + other.max_size
+                ty = BoundOrderBitField
+            else:
+                ty = OrderBitField
+            return ty(b)
         return NotImplemented
