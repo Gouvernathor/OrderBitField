@@ -6,9 +6,9 @@ import warnings
 from deps import (
     common_prefix as _common_prefix,
     generate_codes as _generate_codes,
-    MAX_BYTE as _MAX_BYTE,
-    MAGIC_MIDDLE as _MAGIC_MIDDLE,
-    BYTES_MAGIC_MIDDLE as _BYTES_MAGIC_MIDDLE,
+    simple_between as _simple_between,
+    simple_before as _simple_before,
+    simple_after as _simple_after,
     BYTES_ZERO as _BYTES_ZERO,
 )
 
@@ -71,20 +71,7 @@ class OrderBitField(bytes):
         Constructor, returns a new OrderBitField that is between the two given OrderBitFields.
         Use the `n_between` method in preference to this one.
         """
-        for i, (a, b) in enumerate(zip(start, end)):
-            if a != b:
-                post = (a + b) // 2
-                posts = bytearray((post,))
-                if post in (a, b):
-                    posts.append(_MAGIC_MIDDLE)
-                return cls(start[:i] + posts)
-
-        mx = max(start, end, key=len)
-        post = mx[i+1] // 2 # type: ignore
-        posts = bytearray((post,))
-        if post == 0:
-            posts.append(_MAGIC_MIDDLE)
-        return cls(start[:i] + posts) # type: ignore
+        return cls(_simple_between(start[:], end[:]))
 
     @classmethod
     def before(cls, other: "OrderBitField") -> Self:
@@ -93,28 +80,14 @@ class OrderBitField(bytes):
         Returns the shortest value possible,
         and then such that it's closest to half of the given OrderBitField.
         """
-        for i, b in enumerate(other):
-            if b > 0:
-                post = b // 2
-                posts = bytearray((post,))
-                if post == 0:
-                    posts.append(_MAGIC_MIDDLE)
-                return cls(other[:i] + posts)
-        raise ValueError("Cannot create a value before 0.")
+        return cls(_simple_before(other[:]))
 
     @classmethod
     def after(cls, other: "OrderBitField") -> Self:
         """
         Constructor, returns a new OrderBitField that is after the given OrderBitField.
         """
-        for i, b in enumerate(other):
-            if b < _MAX_BYTE:
-                post = b + math.ceil((_MAX_BYTE - b) / 2)
-                posts = bytearray((post,))
-                if post == b:
-                    posts.append(_MAGIC_MIDDLE)
-                return cls(other[:i] + posts)
-        return cls(other[:] + _BYTES_MAGIC_MIDDLE)
+        return cls(_simple_after(other[:]))
 
     @classmethod
     def n_between(cls, n: int, start: "OrderBitField|None", end: "OrderBitField|None") -> Iterable[Self]:

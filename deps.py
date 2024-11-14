@@ -1,5 +1,6 @@
 from collections import Counter, defaultdict
 from collections.abc import Collection, Iterable, Mapping
+from math import ceil
 import types
 
 
@@ -174,3 +175,43 @@ def _simple_distribute_indices(ncodes: int, mn: int, mx: int) -> Iterable[int]:
         yield from _simple_distribute_indices(ncodes-1-right, mn, pivot-1)
         yield pivot
         yield from _simple_distribute_indices(right, pivot+1, mx)
+
+
+# Bonus functions
+
+def simple_between(start: bytes, end: bytes) -> bytes:
+    i = -1
+    for i, (a, b) in enumerate(zip(start, end)):
+        if a != b:
+            post = (a + b) // 2
+            posts = bytearray((post,))
+            if post in (a, b):
+                posts.append(MAGIC_MIDDLE)
+            return start[:i] + posts
+
+    mx = max(start, end, key=len)
+    post = mx[i+1] // 2
+    posts = bytearray((post,))
+    if post == 0:
+        posts.append(MAGIC_MIDDLE)
+    return start[:i] + posts
+
+def simple_before(other: bytes) -> bytes:
+    for i, b in enumerate(other):
+        if b > 0:
+            post = b // 2
+            posts = bytearray((post,))
+            if post == 0:
+                posts.append(MAGIC_MIDDLE)
+            return other[:i] + posts
+    raise ValueError("Cannot create a value before 0.")
+
+def simple_after(other: bytes) -> bytes:
+    for i, b in enumerate(other):
+        if b < MAX_BYTE:
+            post = b + ceil((MAX_BYTE - b) / 2)
+            posts = bytearray((post,))
+            if post == b:
+                posts.append(MAGIC_MIDDLE)
+            return other[:i] + posts
+    return other + BYTES_MAGIC_MIDDLE
