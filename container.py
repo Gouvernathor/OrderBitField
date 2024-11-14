@@ -63,6 +63,14 @@ class ReorderableContainer[T](Collection[T], Reversible[T], ABC):
         Extracts a key function, to be used i.e in the sorted or list.sort methods.
         """
 
+    @property
+    @abstractmethod
+    def elements(self) -> Collection[T]:
+        """
+        The elements of the container, in no particular order.
+        May be a cheaper operation than iterating over the container in order.
+        """
+
     # abstract :
     # __contains__
     # __iter__
@@ -76,6 +84,11 @@ class MappingBasedReorderableContainer[T](ReorderableContainer[T]):
 
     def __init__(self, *elements: T) -> None:
         self._store = dict(zip(elements, OrderBitField.initial(len(elements))))
+
+    @property
+    @override
+    def elements(self) -> Collection[T]:
+        return self._store.keys()
 
     @override
     def __contains__(self, x: object) -> bool:
