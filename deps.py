@@ -36,7 +36,9 @@ def generate_codes_v3(
 
     # range of possible direct digits : [[start_digit_1 + 1, end_digit_1]]
     n_direct_candidates = end_digit_1 - (start_digit_1 + 1) + 1
+    # the x digits that will be used for direct codes
     direct: Collection[int]
+    # the number of longer codes that will be generated for each x digit
     longer: Mapping[int, int]
 
     if n_direct_candidates >= ncodes:
@@ -107,6 +109,10 @@ def _ponderated_distribute_indices(
         mn: int, mx: int,
         ponderation: Mapping[int, float],
         ) -> Mapping[int, int]:
+    """
+    Spreads ncodes among the mn to mx digits inclusive,
+    with a ponderation for each index.
+    """
     assert 0 <= mn
     assert mn < mx
     assert mx < _TOP_VALUE
@@ -128,6 +134,14 @@ def _ponderated_distribute_indices(
     return attrib
 
 def _simple_distribute_indices(ncodes: int, mn: int, mx: int) -> Iterable[int]:
+    """
+    Spreads ncodes among the mn to mx digits inclusive.
+    ncodes must be positive and lower or equal to the number of available digits.
+
+    If there are 2 codes to spread, they are attributed on a thirds basis
+    Otherwise, one code is placed at the middle digit rounded down, and the others
+    are spread recursively among the remaining digits.
+    """
     if ncodes <= 0:
         return ()
 
