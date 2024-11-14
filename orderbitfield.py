@@ -19,6 +19,11 @@ class ZeroOrderBitFieldWarning(Warning):
     Such a value is invalid, as it's impossible to place a value before it.
     """
 
+class BoundOrderBitFieldMaxSizeException(ValueError):
+    """
+    Exception raised when trying to create a too-large BoundOrderBitField.
+    """
+
 class OrderBitField(bytes):
     """
     Represents the ordering index of a value with respect to other similarly indexed values.
@@ -34,11 +39,21 @@ class OrderBitField(bytes):
 
     The instances are immutable.
     The only operations that should be done between instances are comparisons and equality checks.
+
+    Subclasses may set the `max_size` class field to limit the size of the OrderBitField (in bytes),
+    which in return allows it to support concatenation to the right with other OrderBitFields.
     """
     __slots__ = ()
 
+    max_size: int|None = None
+
     def __new__(cls, val):
-        val = bytes(val).rstrip(_BYTES_ZERO)
+        val = bytes(val)
+
+        if (cls.max_size is not None) and (len(val) > cls.max_size):
+            raise BoundOrderBitFieldMaxSizeException(f"Value {val!r} is too long for a BoundOrderBitField of size {cls.max_size}.")
+
+        val = val.rstrip(_BYTES_ZERO)
         if not val:
             warnings.warn(f"Value {val!r} resolves to 0 or empty bytes, which results in an invalid OrderBitField.", ZeroOrderBitFieldWarning)
 
@@ -127,52 +142,17 @@ class OrderBitField(bytes):
         """
         return map(cls, _generate_codes_v3(n, b"", None, b""))
 
-    # TODO test this for internal failures
-    __add__ = __radd__ = lambda self, other: NotImplemented
-
-
-# Bound OrderBitFields
-
-class BoundOrderBitFieldMaxSizeException(ValueError):
-    """
-    Exception raised when trying to create a too-large BoundOrderBitField.
-    """
-
-class BoundOrderBitField(OrderBitField):
-    """
-    Abstract base class for bound OrderBitFields.
-
-    Pass max_size=n to the subclass definition (either as a class field or as kwargs) to create a BoundOrderBitField type of size n.
-    Nothing else needs to be added to the subclass definition (other than a recommended `__slots__=()`).
-
-    BoundOrderBitField instances have a maximum size,
-    so depending on constraints, some of the classmethod constructors may raise a BoundOrderBitFieldMaxSizeException.
-    The counterpart is that BoundOrderBitField instances can be concatenated to the right with other OrderBitFields.
-    """
-    __slots__ = ()
-    max_size: ClassVar[int]
-
-    def __new__(cls, val):
-        val = bytes(val)
-        if len(val) > cls.max_size:
-            raise BoundOrderBitFieldMaxSizeException(f"Value {val!r} is too long for a BoundOrderBitField of size {cls.max_size}.")
-        return super().__new__(cls, val)
-
-    def __add__(self, other: OrderBitField):
+    def __add__(self, other):
         """
+        This only works when the left instance is bound.
         The self instance is right-padded with 0 bytes.
         If the other instance is bound, the new instance is bound to the sum of the sizes.
-        Otherwise, the new instance is an unbound OrderBitField.
+        Otherwise, the new instance is not bound.
+        The return type is always the type of the left operand.
         """
-        if isinstance(other, BoundOrderBitField):
-            class NewBoundOrderBitField(BoundOrderBitField, max_size=self.max_size + other.max_size):
-                __slots__ = ()
-            new_type = NewBoundOrderBitField
-        else:
-            new_type = OrderBitField
-        return new_type(bytes.__add__(self.ljust(self.max_size, _BYTES_ZERO), other))
-
-    def __init_subclass__(cls, *, max_size=None) -> None:
-        if max_size is not None:
-            cls.max_size = max_size
-        return super().__init_subclass__()
+        if (self.max_size is not None) and isinstance(other, OrderBitField):
+            rv = type(self)(bytes.__add__(self.ljust(self.max_size, _BYTES_ZERO), other))
+            if other.max_size is not None:
+                rv.max_size = self.max_size + other.max_size
+            return rv
+        return NotImplemented
