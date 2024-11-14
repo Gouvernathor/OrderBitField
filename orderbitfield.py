@@ -59,9 +59,8 @@ class OrderBitField(bytes):
 
         return super().__new__(cls, val)
 
-    @property
-    def val(self):
-        return bytes(self)
+    def __bytes__(self):
+        return self[:]
 
     def __repr__(self):
         return f"{self.__class__.__name__}(({', '.join(map(str, self))}))"
@@ -78,14 +77,14 @@ class OrderBitField(bytes):
                 posts = bytearray((post,))
                 if post in (a, b):
                     posts.append(_MAGIC_MIDDLE)
-                return cls(start[:i] + bytes(posts))
+                return cls(start[:i] + posts)
 
         mx = max(start, end, key=len)
         post = mx[i+1] // 2 # type: ignore
         posts = bytearray((post,))
         if post == 0:
             posts.append(_MAGIC_MIDDLE)
-        return cls(start[:i] + bytes(posts)) # type: ignore
+        return cls(start[:i] + posts) # type: ignore
 
     @classmethod
     def before(cls, other: "OrderBitField") -> Self:
