@@ -66,31 +66,7 @@ class OrderBitField(bytes):
         return f"{self.__class__.__name__}(({', '.join(map(str, self))}))"
 
     @classmethod
-    def between(cls, start: "OrderBitField", end: "OrderBitField") -> Self:
-        """
-        Constructor, returns a new OrderBitField that is between the two given OrderBitFields.
-        Use the `n_between` method in preference to this one.
-        """
-        return cls(_simple_between(start[:], end[:]))
-
-    @classmethod
-    def before(cls, other: "OrderBitField") -> Self:
-        """
-        Constructor, returns a new OrderBitField that is before the given OrderBitField.
-        Returns the shortest value possible,
-        and then such that it's closest to half of the given OrderBitField.
-        """
-        return cls(_simple_before(other[:]))
-
-    @classmethod
-    def after(cls, other: "OrderBitField") -> Self:
-        """
-        Constructor, returns a new OrderBitField that is after the given OrderBitField.
-        """
-        return cls(_simple_after(other[:]))
-
-    @classmethod
-    def n_between(cls, n: int, start: "OrderBitField|None", end: "OrderBitField|None") -> Iterable[Self]:
+    def between(cls, n: int, start: "OrderBitField|None", end: "OrderBitField|None") -> Iterable[Self]:
         """
         Constructor, yields OrderBitFields that are between the two given OrderBitFields.
         Returns the shortest values possible,
@@ -113,6 +89,37 @@ class OrderBitField(bytes):
         and then as evenly spaced as possible.
         """
         return map(cls, _generate_codes(n, b"", None, b""))
+
+    @classmethod
+    def before(cls, n: int, other: "OrderBitField") -> Iterable[Self]:
+        return map(cls, _generate_codes(n, b"", other, b""))
+
+    @classmethod
+    def after(cls, n: int, other: "OrderBitField") -> Iterable[Self]:
+        return map(cls, _generate_codes(n, other, None, b""))
+
+    @classmethod
+    def single_before(cls, other: "OrderBitField") -> Self:
+        """
+        Constructor, returns a new OrderBitField that is before the given OrderBitField.
+        Returns the shortest value possible,
+        and then such that it's closest to half of the given OrderBitField.
+        """
+        return cls(_simple_before(other[:]))
+
+    @classmethod
+    def single_after(cls, other: "OrderBitField") -> Self:
+        """
+        Constructor, returns a new OrderBitField that is after the given OrderBitField.
+        """
+        return cls(_simple_after(other[:]))
+
+    @classmethod
+    def single_between(cls, start: "OrderBitField", end: "OrderBitField") -> Self:
+        """
+        Constructor, returns a new OrderBitField that is between the two given OrderBitFields.
+        """
+        return cls(_simple_between(start[:], end[:]))
 
     def __add__(self, other) -> "OrderBitField":
         """

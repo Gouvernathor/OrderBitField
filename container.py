@@ -107,7 +107,7 @@ class MappingBasedReorderableContainer[T](ReorderableContainer[T]):
         return iter(sorted(self._store, key=self._store.__getitem__, reverse=True))
 
     def _put_between_orderfields(self, elements: Collection[T], start: OrderBitField|None, end: OrderBitField|None):
-        newos = OrderBitField.n_between(len(elements), start, end)
+        newos = OrderBitField.between(len(elements), start, end)
         for element, newo in zip(elements, newos):
             self._store[element] = newo
 
