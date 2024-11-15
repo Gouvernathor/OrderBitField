@@ -11,6 +11,8 @@ MAGIC_MIDDLE = _TOP_VALUE // 2
 BYTES_MAGIC_MIDDLE = bytes((MAGIC_MIDDLE,))
 BYTES_ZERO = bytes((0,))
 
+type byte = int
+
 def common_prefix(s1: bytes, s2: bytes) -> bytes:
     """
     Requires s1 and s2 to be ordered, in that order.
@@ -41,9 +43,9 @@ def generate_codes_v3(
     # range of possible direct digits : [[start_digit_1 + 1, end_digit_1]]
     n_direct_candidates = end_digit_1 - (start_digit_1 + 1) + 1
     # the x digits that will be used for direct codes
-    direct: Collection[int]
+    direct: Collection[byte]
     # the number of longer codes that will be generated for each x digit
-    longer: Mapping[int, int]
+    longer: Mapping[byte, int]
 
     if n_direct_candidates >= ncodes:
         # everything can go in direct codes
@@ -73,7 +75,7 @@ def generate_codes_v3(
         # otherwise that digit has no particular ponderation
         # in any case, start_digit_1 is valid as a start for longer codes
 
-        longer_max_boundary: int # inclusive
+        longer_max_boundary: byte # inclusive
         if code_end:
             # if there is an end boundary,
             if len(code_end) > 1:
@@ -112,9 +114,9 @@ generate_codes = generate_codes_v3
 
 def _ponderated_distribute_indices(
         ncodes: int,
-        mn: int, mx: int,
-        ponderation: Mapping[int, float],
-        ) -> Mapping[int, int]:
+        mn: byte, mx: byte,
+        ponderation: Mapping[byte, float],
+        ) -> Mapping[byte, int]:
     """
     Spreads ncodes among the mn to mx digits inclusive,
     with a ponderation for each index.
@@ -139,7 +141,7 @@ def _ponderated_distribute_indices(
 
     return attrib
 
-def _simple_distribute_indices(ncodes: int, mn: int, mx: int) -> Iterable[int]:
+def _simple_distribute_indices(ncodes: int, mn: byte, mx: byte) -> Iterable[byte]:
     """
     Spreads ncodes among the mn to mx digits inclusive.
     ncodes must be positive and lower or equal to the number of available digits.
