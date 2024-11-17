@@ -6,9 +6,9 @@ import types
 
 _EMPTYMAP = types.MappingProxyType({})
 _TOP_VALUE = 256
-MAX_BYTE = _TOP_VALUE - 1
-MAGIC_MIDDLE = _TOP_VALUE // 2
-BYTES_MAGIC_MIDDLE = bytes((MAGIC_MIDDLE,))
+_MAX_BYTE = _TOP_VALUE - 1
+_MAGIC_MIDDLE = _TOP_VALUE // 2
+_BYTES_MAGIC_MIDDLE = bytes((_MAGIC_MIDDLE,))
 BYTES_ZERO = bytes((0,))
 
 type byte = int
@@ -35,7 +35,7 @@ def generate_codes_v3(
         return
 
     start_digit_1 = code_start[0] if code_start else 0
-    end_digit_1 = code_end[0] if code_end else MAX_BYTE
+    end_digit_1 = code_end[0] if code_end else _MAX_BYTE
 
     # there are going to be direct codes (form prefixe + x)
     # and longer codes (form prefixe + xy)
@@ -188,14 +188,14 @@ def simple_between(start: bytes, end: bytes) -> bytes:
             post = (a + b) // 2
             posts = bytearray((post,))
             if post in (a, b):
-                posts.append(MAGIC_MIDDLE)
+                posts.append(_MAGIC_MIDDLE)
             return start[:i] + posts
 
     mx = max(start, end, key=len)
     post = mx[i+1] // 2
     posts = bytearray((post,))
     if post == 0:
-        posts.append(MAGIC_MIDDLE)
+        posts.append(_MAGIC_MIDDLE)
     return start[:i] + posts
 
 def simple_before(other: bytes) -> bytes:
@@ -204,16 +204,16 @@ def simple_before(other: bytes) -> bytes:
             post = b // 2
             posts = bytearray((post,))
             if post == 0:
-                posts.append(MAGIC_MIDDLE)
+                posts.append(_MAGIC_MIDDLE)
             return other[:i] + posts
     raise ValueError("Cannot create a value before 0.")
 
 def simple_after(other: bytes) -> bytes:
     for i, b in enumerate(other):
-        if b < MAX_BYTE:
-            post = b + ceil((MAX_BYTE - b) / 2)
+        if b < _MAX_BYTE:
+            post = b + ceil((_MAX_BYTE - b) / 2)
             posts = bytearray((post,))
             if post == b:
-                posts.append(MAGIC_MIDDLE)
+                posts.append(_MAGIC_MIDDLE)
             return other[:i] + posts
-    return other + BYTES_MAGIC_MIDDLE
+    return other + _BYTES_MAGIC_MIDDLE
