@@ -106,39 +106,38 @@ class MappingBasedReorderableContainer[T](ReorderableContainer[T]):
     def __reversed__(self) -> Iterator[T]:
         return iter(sorted(self._store, key=self._store.__getitem__, reverse=True))
 
-    def _put_between_orderfields(self, elements: Collection[T], start: OrderBitField|None, end: OrderBitField|None):
-        newos = OrderBitField.between(len(elements), start, end)
-        for element, newo in zip(elements, newos):
-            self._store[element] = newo
-
     @override
     def put_between(self, start: T, end: T, *elements: T) -> None:
         if start == end:
             raise ValueError("The start and end elements are the same")
-        self._put_between_orderfields(elements, self._store[start], self._store[end])
+        self._store.update(zip(elements, OrderBitField.between(len(elements), self._store[start], self._store[end])))
 
     @override
     def put_to_end(self, *elements: T, last=True) -> None:
-        if last:
-            start = max(self._store.values(), default=None)
-            end = None
+        if not self._store:
+            codes = OrderBitField.initial(len(elements))
+        elif last:
+            codes = OrderBitField.after(len(elements), max(self._store.values()))
         else:
-            start = None
-            end = min(self._store.values(), default=None)
-
-        self._put_between_orderfields(elements, start, end)
+            codes = OrderBitField.before(len(elements), min(self._store.values()))
+        self._store.update(zip(elements, codes))
 
     @override
     def put_next_to(self, next_to: T, *elements: T, after=True) -> None:
         nto = self._store[next_to]
         if after:
-            start = nto
             end = min(filter(lambda o: o > nto, self._store.values()), default=None)
+            if end is None:
+                codes = OrderBitField.after(len(elements), nto)
+            else:
+                codes = OrderBitField.between(len(elements), nto, end)
         else:
             start = max(filter(lambda o: o < nto, self._store.values()), default=None)
-            end = nto
-
-        self._put_between_orderfields(elements, start, end)
+            if start is None:
+                codes = OrderBitField.before(len(elements), nto)
+            else:
+                codes = OrderBitField.between(len(elements), start, nto)
+        self._store.update(zip(elements, codes))
 
     @override
     def recompute(self) -> None:

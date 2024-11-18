@@ -66,20 +66,16 @@ class OrderBitField(bytes):
         return f"{self.__class__.__name__}(({', '.join(map(str, self))}))"
 
     @classmethod
-    def between(cls, n: int, start: "OrderBitField|None", end: "OrderBitField|None") -> Iterable[Self]:
+    def between(cls, n: int, start: "OrderBitField", end: "OrderBitField") -> Iterable[Self]:
         """
         Constructor, yields OrderBitFields that are between the two given OrderBitFields.
         Returns the shortest values possible,
         and then as evenly spaced between the two boundaries as possible.
         """
-        if start and end:
-            prefixe = _common_prefix(start, end)
-            if prefixe:
-                start = start[len(prefixe):] # type: ignore
-                end = end[len(prefixe):] # type: ignore
-        else:
-            prefixe = b""
-        return map(cls, _generate_codes(n, start or b"", end or None, prefixe))
+        if start == end:
+            raise ValueError("The start and end fields are the same")
+        prefixe = _common_prefix(start, end)
+        return map(cls, _generate_codes(n, start[len(prefixe):], end[len(prefixe):], prefixe))
 
     @classmethod
     def initial(cls, n: int = 1) -> Iterable[Self]:
