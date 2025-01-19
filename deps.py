@@ -71,7 +71,7 @@ def generate_codes_v3(
         # the first digit's ponderation is the distance
         # between that second digit (excluded) and _TOP_VALUE (included)
         if len(code_start) > 1:
-            longer_ponderation[end_digit_1] = (_TOP_VALUE - code_start[1]) / _TOP_VALUE
+            longer_ponderation[start_digit_1] = (_TOP_VALUE - code_start[1]) / _TOP_VALUE
         # otherwise that digit has no particular ponderation
         # in any case, start_digit_1 is valid as a start for longer codes
 
